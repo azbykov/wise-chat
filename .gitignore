@@ -1,0 +1,25 @@
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.svelte-kit/
+uploads/
+
+.env
+.env.*
+!.env.example
+
+*.log
+.DS_Store
+
+# The original brief stays local; its text is in docs/TASK.md
+test-task.pdf
+
+# Playwright
+playwright-report/
+test-results/
+
+# Local only
+.claude/
+.idea

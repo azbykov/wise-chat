@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+
+# Their install scripts are not needed: native parts come prebuilt, and mongodb-memory-server
+# downloads mongod on first use (see the test section of docs/ARCHITECTURE.md).
+ignoredBuiltDependencies:
+  - '@parcel/watcher'
+  - mongodb-memory-server
+  - unrs-resolver

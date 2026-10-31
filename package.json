@@ -1,0 +1,33 @@
+{
+  "name": "wisebits-chat",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter api --filter web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm --filter web exec svelte-kit sync && eslint . --max-warnings 0 && prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "pnpm -r typecheck",
+    "seed": "pnpm --filter api seed",
+    "loadtest": "node loadtest/load.mjs",
+    "db:up": "docker compose -p wisebits-chat-dev -f docker-compose.yml -f docker-compose.dev.yml up -d --wait mongo",
+    "db:down": "docker compose -p wisebits-chat-dev down"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.14.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-svelte": "3.23.1",
+    "globals": "17.13.0",
+    "prettier": "3.9.10",
+    "prettier-plugin-svelte": "4.1.1",
+    "svelte": "5.57.3",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1"
+  }
+}
