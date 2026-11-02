@@ -11,6 +11,11 @@ services:
       - --quiet
       - --setParameter
       - transactionLifetimeLimitSeconds=10
+    environment:
+      # On Linux kernel 6.19+ mongod 8.0 refuses to start (SERVER-121912). The image sets
+      # rseq=0 so that tcmalloc owns rseq; giving it back to glibc makes tcmalloc use per-thread
+      # caches instead of per-CPU ones, and the startup check passes.
+      GLIBC_TUNABLES: glibc.pthread.rseq=1
     volumes:
       - mongo-data:/data/db
     healthcheck:

@@ -662,10 +662,14 @@ Web и API должны быть на одном сайте (например, `
   - `--setParameter transactionLifetimeLimitSeconds=10`: если процесс бэкенда упадёт посреди
     транзакции, незавершённая транзакция держит блокировку диалога до этого лимита (по умолчанию
     60 секунд), и отправки в этот диалог после рестарта ждали бы всё это время.
-  - **Ядро Linux 6.19+.** По опыту эталона mongod 8.0.30+ не стартует на хостах с таким ядром
-    (SERVER-121912), обходной путь — `GLIBC_TUNABLES=glibc.pthread.rseq=1`. На шаге 1 проверено
-    на Docker Desktop для macOS (ядро 6.12): replica set поднимается, транзакции работают,
-    обходной путь не нужен. Проверить на Linux-хосте с ядром 6.19+ пока не на чем.
+  - **Ядро Linux 6.19+.** mongod 8.0 на таком ядре сразу завершается с «MongoDB cannot start:
+    Linux kernel versions 6.19 and newer…» (SERVER-121912); так упал e2e на раннере GitHub
+    Actions. У сервиса `mongo` задано `GLIBC_TUNABLES=glibc.pthread.rseq=1`: образ ставит
+    `rseq=0`, чтобы rseq регистрировал tcmalloc, а с `rseq=1` его забирает glibc, tcmalloc
+    переходит с per-CPU кэшей на per-thread (`usingPerCPUCaches: false` в
+    `serverStatus().tcmalloc`), и проверка при старте проходит. Цена — чуть ниже пропускная
+    способность аллокатора. Unit-тесты это не задевает: `mongodb-memory-server` запускает
+    `mongod` прямо на раннере, где glibc по умолчанию и так держит rseq.
 - **Демо-секрет.** `JWT_SECRET: ${JWT_SECRET:-local-demo-secret-change-me-please}` —
   значение по умолчанию прямо в `docker-compose.yml`, чтобы проект запускался без ручных шагов.
   README прямо оговаривает: секрет только для локального запуска, для любого другого окружения
