@@ -1,0 +1,7 @@
+# Local development: only MongoDB, with its port on the loopback interface.
+# Connect from the host with directConnection=true: the replica set member is registered as
+# mongo:27017, a name the host cannot resolve.
+services:
+  mongo:
+    ports:
+      - '127.0.0.1:${MONGO_PORT:-27017}:27017'

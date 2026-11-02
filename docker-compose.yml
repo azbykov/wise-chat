@@ -1,0 +1,88 @@
+name: wisebits-chat
+
+services:
+  mongo:
+    image: mongo:8.0
+    restart: unless-stopped
+    command:
+      - --replSet
+      - rs0
+      - --bind_ip_all
+      - --quiet
+      - --setParameter
+      - transactionLifetimeLimitSeconds=10
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }).ok }"
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      MONGO_URI: mongodb://mongo:27017/chat?replicaSet=rs0
+      PORT: 3000
+      # The browser calls the API directly, from the web app's address.
+      CORS_ORIGIN: http://localhost:${WEB_PORT:-5173}
+      # A demo value so the stack starts without setup. Set your own for anything but local use:
+      # JWT_SECRET=$(openssl rand -base64 48) in .env next to this file.
+      JWT_SECRET: ${JWT_SECRET:-local-demo-secret-change-me-please}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-30}
+      # Set to true when the site is served over HTTPS: the refresh cookie then never travels in clear.
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      AUTH_RATE_LIMIT_PER_MINUTE: ${AUTH_RATE_LIMIT_PER_MINUTE:-10}
+      # Number of reverse proxies in front of the API; 0 when clients connect directly.
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+      UPLOADS_DIR: /app/uploads
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - '${API_PORT:-3000}:3000'
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/api/health']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      # Where the browser finds the API: read when the server starts, not baked into the image.
+      PUBLIC_API_URL: http://localhost:${API_PORT:-3000}
+      PORT: 5173
+      HOST: 0.0.0.0
+      ORIGIN: http://localhost:${WEB_PORT:-5173}
+    ports:
+      - '${WEB_PORT:-5173}:5173'
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:5173/login']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+volumes:
+  mongo-data:
+  uploads:
